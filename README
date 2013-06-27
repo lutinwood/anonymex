@@ -1,0 +1,45 @@
+# Version 27 juin 2013 
+
+# Fichier sources
+
+gen_name.pm 	Subroutines pour la génération d'identité 
+		utilisé par le script remp.pl.
+
+traitement.pm	Subroutine pour la mise en page du nouveau fichier 
+		LDIF
+
+rem.pl		Parcours le fichier d'origine LDIF puis génère un 
+		nombre d'identité désiré
+		Produit 3 fichiers
+	# -- *_ldap_base.ldif	Fichier contenant un echantillon
+	# -- *_cor_file.txt	Correspondance des uid echantilloné
+	# -- *_unwant_file.txt	uid non selectionnées
+
+clean.pl	Nettoie le fichier ldap_base.ldif
+		1 er remplacement des uid modifié 
+		2 em passage suppression des uid non désiré
+DEBUG 		
+gen_sed.pl	Création d'un fchier sed pour la phase 1 de nettoyage
+	-- sed -f fichier.sed -i fichier.ldif
+		Création d'un fchier sed pour la phase 2 de nettoyage
+	-- split fhier.sed 
+	-- toolp.pl
+tool.pl		A utilisé après un split du fichier de sortie sed 
+
+BUG :: 
+DES erreures apparaissae dans le fichier sed nettoyer les fichier unwant au préa lable . 
+
+
+/src 	----- Ressources
+ua-pass.ldif		Fichier LDIF d'origine
+
+index_auteur.txt	Contient une liste d'auteur
+			Utilisé par genname pour la génération
+			d'identités. 
+
+FRANCE.csv	( Contient les villes de france)
+		Utilisé par gen_name.pm pour la géneration 
+		d'adresse.
+---
+
+
