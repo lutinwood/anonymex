@@ -10,9 +10,14 @@ use strict;
 use warnings;
 
 ###################	VARIABLES
+#
+#	perl rem.pl $limit $file_ldif 
+#
 ####	scalaire
-my $limit= 500;
-my $file = "src/ua-pass.ldif";
+# Nombre d'individus à générer 
+my $limit= $ARGV[0];
+# Fichier LDIF De référence
+my $file = "src/".$ARGV[1];
 my $output = $limit."_ldap_base.ldif";
 my $cpt = 0;
 my $attr= 'auaStatut';
@@ -28,8 +33,12 @@ my @exclus = ('jeton','convention','ext-conseils','acces-web');
 ## Champs mail 
 my @mail_field =('mail','auaEmailRenvoi',
 		'auaAliasEmail','supannMailPerso','supannAutreMail');
+
+my @objectclass=('auaGroup','sambaSamAccount');
+
 #list des uid a supprimer
 my @eggs= ();
+my @uidex=();
 
 ###################	OUVERTURE DE FICHIERS
 # Ouverture du fichier source 
@@ -45,7 +54,8 @@ unless(-e $output){
 			encode => 'canonical', onerror => 'undef');
 #Concerne tout mes attributs ayant un attribut uid
 
-	 
+	# if($entry->exists('sambaSID')){
+		 
 #########		TRAITEMENT
 # Debut de la lecture du fichier source
 while (not $ldif->eof() ){
@@ -56,6 +66,8 @@ while (not $ldif->eof() ){
 		# Ecriture des profils non concernés par les modifications
 		# Ayant un attribut auastatut
 		$out_ldif->write_entry($entry);
+		my $uidex = $entry->get_value('uid');
+		push @uidex,$uidex unless $uidex ~~ @uidex;
 		}
 	elsif($cpt < $limit && $entry->exists('uid') ) {
 		my $genID = $final[$cpt];
@@ -75,7 +87,7 @@ while (not $ldif->eof() ){
 		   traitement::IdModTwo($genID,$entry);
 		   #Modification des attributs facultatifs
 		   my @fields = ('mail','auaEmailRenvoi','auaAliasEmail','supannMailPerso',
-			'postalAddress','telephoneNumber', 'supannAutreTelephone');
+			'postalAddress','telephoneNumber', 'supannAutreTelephone','sambaSID');
 		  	   foreach my $field(@fields){ 
 		   		traitement::SpecMod($genID,$entry,$field);
 		  	   }
@@ -85,18 +97,20 @@ while (not $ldif->eof() ){
 		   # Ecriture des enregistrements modifiés
 		   $out_ldif->write_entry($entry);
 		   }#end limit
-	elsif($cpt == $limit && $entry->exists('uid')){
+	elsif($cpt == $limit && $entry->exists('uid') && $entry->get_value('objectclass') !~ @objectclass ){
 		my $uwant = $entry->get_value('uid');
-		if(!$uwant){
+		if($entry->get_value('auastatut') ~~ @exclus){
 		print "error";
 		}else{
-		push @eggs,$uwant unless $uwant ~~ @eggs;
+		push @eggs,$uwant unless $uwant ~~ @eggs or $uwant ~~ @uidex or 
+		$entry->get_value('objectClass')eq "organizationalUnit";
 		} 
 	}else{	 
 		# Fin des profils a ne pas modifier ayant un champs auastatut	
 		# Ecriture des enregistrement non modifié
 		# Ne contenant aucun uid
-		$out_ldif->write_entry($entry);
+		
+		$out_ldif->write_entry($entry)unless $entry->get_value('uid') ~~ @eggs;
 		}#fin else
 	    }# fin du while	
 #Cloture des fichiers

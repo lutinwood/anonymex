@@ -48,7 +48,7 @@ sub get_uid_list{
         return @uid;
 }
  # Recupérationd des variables
-my $limit = "500";
+my $limit = $ARGV[0];
 my %cor =&get_uid_hash($limit);
 my @uid =&get_uid_list($limit);
   

@@ -56,6 +56,11 @@ sub SpecMod{
 			$entry->replace($field => gen_name::gen_phone());
 			}
 		}
+  elsif($field eq 'sambaSID'){
+		if ($entry->get_value('sambaSID')){
+		$entry->replace(sambaSID => $genID->{uid});
+		}	
+	}
 	else{
 	}
 }
