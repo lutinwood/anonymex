@@ -1,3 +1,26 @@
+
+# VErsion Jeudi 4 juillet 
+ La version pécédente comportait de nombreuses erreurs:
+
+Cette nouvelle version propose une façon simplifier d'utilisation et un factorisation des résultats. 
+
+Utilisation :
+perl rem.pl 100 ua-pass.ldif
+
+>> Sortie 
+	100_cor.txt  100group.ldif  100_non_modified.ldif  100selected.ldif  100_unwant.txt
+
+les fichiers texte ne sont plus utilisé 
+
+ensuite importer les fichier ldif 
+100_non_modified.ldif --> contient le s entrées non modifiées 
+100selected.ldif 	--> contient les entrées selectionné 
+100group.ldif 		--> contient les groupes 
+
+
+
+
+
 # Version 27 juin 2013 
 
 # Fichier sources

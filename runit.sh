@@ -4,7 +4,7 @@ number="$1"
 echo "generate copy"
 perl rem.pl $number ua-pass.ldif
 echo "generate sed file"
-perl gen_sed $number
+perl gen_sed.pl $number
 echo "replace uid"
 sed -f $number'_hash.sed' -i $number'_ldap_base.ldif'
 echo "delete the buggy entry"
