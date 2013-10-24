@@ -24,7 +24,7 @@ my %uids = ();
 # extract name list
 my @final = gen_name::result();
 ## auastatut non traité
-my @exclus = ('jeton','convention','ext-conseils','acces-web');
+my @exclus = ('jeton','convention','ext-conseils','acces-web','bu');
 ## Champs mail 
 my @mail_field =('mail','auaEmailRenvoi',
                 'auaAliasEmail','supannMailPerso','supannAutreMail');
@@ -101,7 +101,7 @@ while (not $r_source->eof() ){
 		my $uidex = $entry->get_value('uid');
 		push @uidex,$uidex unless $uidex ~~ @uidex;
 		}
-# sil il s'agit d'un ordinateur
+# si il s'agit d'un ordinateur
 	elsif($entry->dn() =~ m/ou\=host/){
 		$w_non_modif->write_entry($entry);
 	}
