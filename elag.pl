@@ -51,11 +51,16 @@ if($ARGV[0] eq ''){
 my $input_ldif = $ARGV[0];
 my $output_ldif = $ARGV[1];
 # auastatus a supprimer
-my @status_exclus =('bu','bu-sortant','ext-conseil','nomail');
+my @status_exclus =('access-web','bu','bu-sortant','convention', 'etu_entrant',
+ 'ext-conseil','perso-nomail','perso-sortant-nomail');
 
 # objectclass a supprimer 
-my @object_exclus = ('sambaSamAccount');
+my @object_exclus = ('sambaSamAccount','sambaDomain');
 
+#ou=hosts
+
+#Champs à supprimer dans ou=people :
+#samba*
 
 ############## OUVERTURE DE FICHIER
 # SOURCE
@@ -63,7 +68,8 @@ my @object_exclus = ('sambaSamAccount');
 	my $write_clean = &open_file($output_ldif,"w");
 
 ## Lecture Source
-while (not my $read_source->eof()){
+
+while (not $read_source->eof()){
 		my $entry = $read_source->read_entry();
 		# n'est pas un hôte
 		if (not $entry -> dn() =~ m/ou\=host/
