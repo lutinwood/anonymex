@@ -1,8 +1,10 @@
 #!/usr/bin/perl -w
-
 #REM -Read Extract and Modify
 use Net::LDAP::LDIF;
 
+require "file.pm";
+require "user.pm";
+require "group.pm";
 require "gen_name.pm";
 require "traitement.pm";
 
@@ -11,188 +13,167 @@ use warnings;
 
 ###################	VARIABLES
 #
-#	perl rem.pl $limit $file_ldif 
+#	perl rem.pl $file_ldif $limit
 #
-####	scalaire
+##############################
+
+
+sub test_file_ldif{
+	my $file = "testg.ldif" ;
+	file::open_file($file,"w");
+}
+#&test_file_ldif;
+
+
+file::test_parameter($ARGV[0],$ARGV[1]);
+
+# Fichier LDIF De référence
+my $source =$ARGV[0];
+
 # Nombre d'individus à générer 
-my $limit= $ARGV[0];
+my $limit= $ARGV[1];
 
-# Tableau associatifs contenants anciens et nouveau uid 
-# pour futur modification des champs Memberuid & member: :uid
-
-my %uids = ();
-# extract name list
-my @final = gen_name::result();
 ## auastatut non traité
-my @exclus = ('jeton','convention','ext-conseils','acces-web','bu');
+my @exclus = ('jeton');
 ## Champs mail 
 my @mail_field =('mail','auaEmailRenvoi',
                 'auaAliasEmail','supannMailPerso','supannAutreMail');
 
-my @objectclass=('auaGroup','sambaSamAccount');
-
 #list des uid a supprimer
+#UID non retenues
 my @eggs= ();
+
 my @uidex=();
 
 my $ref_uid = "uid=ShaAbu,ou=people,dc=univ-angers,dc=fr";
 
 #####################			FICHIERS
-# Fichier LDIF De référence
-my $source ="src/".$ARGV[1]; 
+ 
 # non modify 
 my $non_modif = $limit."_non_modified.ldif";
 # selected
 my $selected = $limit."selected.ldif";
-# group 
-my $group = $limit."group.ldif"; 
 
-my $cpt = 0;
+
+
+
 my $attr= 'auaStatut';
 my $uidToDelete; 
-
-#################""""""		SUBROUTINE
-sub open_file{
-my $file = $_[0];
-my $option =$_[1]; 
-my $output;
-
-
-if($option eq "r"){
-
-	$output = Net::LDAP::LDIF->new( $file, "r", 
-                        encode => 'canonical', onerror => 'undef');
-}elsif($option eq "w"){
-
-        $output = Net::LDAP::LDIF->new($file, "a", 
-                        encode => 'canonical', onerror => 'undef');
-        }else{
-		print "Option not defined $file \n";
-		exit;
-	}
-	return $output;
-	}
-
-
 ###################	OUVERTURE DE FICHIERS
 # Ouverture du fichier source 
-my $r_source = &open_file($source,"r");
-
+	my $r_source = file::open_file($source,"r");
 # Ouverture du fichier des entree modifiées	
-my $w_non_modif = &open_file($non_modif,"w");
+	my $w_non_modif = file::open_file($non_modif,"w");
 
-# Ouverture du fichier des selections
-my $w_selected = &open_file($selected,"w");
 
-# Ouverture deu fichier des group
-my $w_group = &open_file($group,"w");
-	 
+my %uids = ();
+
+#TEST
+my $nbgroup 	= 	0;
+my $member 		= 	0;
+my $memberUID 	= 	0;
+my $gecos 		= 	0;
+my $domain		=	0;
+my $domain_group= 	0;
+my $entry_waited=	0;
+my $notparsed	=	0;
+my $other_entries=	0;
+
 #########		TRAITEMENT
 # Debut de la lecture du fichier source
-while (not $r_source->eof() ){
+sub get_only_group{
+	# group 
+
+	while (not $r_source->eof() ){
+		
+		my $group_file = $limit."_group.ldif";
+	my $domain_file = $limit."_domain.ldif";
+	my $domain_group_file = $limit."_domain_group.ldif";
+	# Ouverture des fichiers 
+	my $w_group_file = file::open_file($group_file,"w");
+	my $w_domain_file = file::open_file($domain_file,"w");
+	my $w_domain_group_file = file::open_file($domain_group_file,"w");
 	# Unité d'enregistrement : Instance de 	NET::LDAP::ENTRY
 	my $entry = $r_source->read_entry();
+if ($entry eq ''){
+		print 'no entry' ;
+		exit;
+}
 
-	my @object = $entry->get_value('objectClass');
-	if($entry->exists($attr) && $entry->get_value($attr) ~~ @exclus){
-		# Ecriture des profils non concernés par les modifications
-		# Ayant un attribut auastatut
-		$w_non_modif->write_entry($entry);
-		my $uidex = $entry->get_value('uid');
-		push @uidex,$uidex unless $uidex ~~ @uidex;
+	if(group::is_domain($entry) || group::is_group($entry))
+		{
+			if(group::is_domain($entry) && group::is_group($entry)){
+				group::get_domain($entry,$w_domain_group_file);
+				$domain_group++;
+			}elsif(group::is_domain($entry)){
+				group::get_domain($entry,$w_domain_file);
+				$domain++;
+			}elsif(group::is_group($entry)){
+				$nbgroup++;
+			}
 		}
-# si il s'agit d'un ordinateur
-	elsif($entry->dn() =~ m/ou\=host/){
-		$w_non_modif->write_entry($entry);
+	#Fermeture des fichiers
+	$w_group_file->done();
+	$w_domain_file->done();
+	$w_domain_group_file->done();
 	}
-	elsif($entry->exists('gecos') ){
-		$w_non_modif->write_entry($entry);
-		} 
-# si il s'agit d'un group 
-	elsif("auaGroup" ~~ @object){
-		$w_group->write_entry($entry);
-                }
-	elsif($entry->dn() =~ m/ou\=domains/){
-                $w_non_modif->write_entry($entry);
-        }
-# gestion des group 
-	elsif($entry->exists('member')){
-		# TODO
-		# replace member by it real new members
-		# Linked with $entry->exists('memberUid')
-		my @new_value = ();
-		$entry->replace('member'=> $ref_uid);
-		$w_group->write_entry($entry);
-		}
-	elsif($entry->exists('memberUid')){
-	my @new_value = ();
-                $entry->replace('memberUid'=> $ref_uid);
-                $w_group->write_entry($entry);
-	}
-# Entree désirées
-	elsif($cpt < $limit && $entry->exists('uid')  && $entry->get_value($attr) && "person" ~~ @object ) {
-		my $genID = $final[$cpt];
-		# Identifiant unique 
-		my $uid =$genID->{uid};
-   		# Conservation d'une correspondance pour future modification
-   		$uids{$entry->get_value('uid')}=$uid;
-		# Modification de base (uid,sn,cn)
-		traitement::IdModOne($genID,$entry);	
-		my $dn 	= $entry->dn() =~ s/uid=(\w*),/uid=$uid,/r;	
- 		# Mise à jour du distinguish name       
-                $entry->dn($dn);
-		# géneration du repertoire personnel
-		traitement::SpecMod($genID,$entry,'homeDirectory');
-		# Population dotée d'un champs auastatut
-		if ($entry->get_value($attr)){	
-		   traitement::IdModTwo($genID,$entry);
-		   #Modification des attributs facultatifs
-		   my @fields = ('mail','auaEmailRenvoi','auaAliasEmail','supannMailPerso',
-			'postalAddress','telephoneNumber', 'supannAutreTelephone','sambaSID');
-		  	   foreach my $field(@fields){ 
-		   		traitement::SpecMod($genID,$entry,$field);
-		  	   }
-		  	}# attribut auastatut
-		   # Incrémantation COmpteur
-		   $cpt++;
-		   # Ecriture des enregistrements modifiés
-		   $w_selected->write_entry($entry);
-		   }#end limit
-	elsif($cpt == $limit && "person" ~~ @object){
-		my $uwant = $entry->get_value('uid');
-		push @eggs,$uwant unless $uwant ~~ @eggs;
-		 
-	}else{	 
-		# Fin des profils a ne pas modifier ayant un champs auastatut	
-		# Ecriture des enregistrement non modifié
-		# Ne contenant aucun uid
-		$w_non_modif->write_entry($entry);
-		#print " NOT defined\n";
+	$r_source->done();
+}
 
-	#	print $entry->dn();	#	print $entry->get_value('dn')."\n";
-	
-		#exit;#	$r_source->done();
-	#	$w_group->done();
-	#	$w_non_modif->done();
-	#	$w_selected->done();
-	#	exit;
-		#$out_ldif->write_entry($entry)unless $entry->get_value('uid') ~~ @eggs;
-		}#fin else
-	    }# fin du while	
+
+sub get_only_user{
+	my $cpt = 0;
+	# Ouverture du fichier des selections
+	my $w_selected = file::open_file($selected,"w");
+	my $r_source = file::open_file($source,"r");
+	while (not $r_source->eof() ){
+		my $entry = $r_source->read_entry();
+	if(user::is_user($entry)){
+		my @final = gen_name::result();
+			if($cpt < $limit){
+				
+				# extract name list
+			
+				my $genID = $final[$cpt];
+				my $uid =$genID->{uid};
+				$uids{$entry->get_value('uid')}=$uid;
+				user::modif_user($entry,$cpt,$uid,$genID);
+				user::get_user($entry,$w_selected);
+				# Incrémentation COmpteur
+				
+				$entry_waited++;
+				$cpt++;
+				}elsif($cpt >= $limit){
+					$notparsed++;	
+				}
+			}else{
+			$other_entries++;
+			}
+	}
+	$w_selected->done();
+}
+
+&get_only_group;
+&get_only_user;
+
 #Cloture des fichiers
-
 $r_source->done();
-$w_group->done();
 $w_non_modif->done();
-$w_selected->done();
+
 ## Modification des entrées uidi
-print scalar(@eggs)."\n";
+#print scalar(@eggs)."\n";
 print " PHASE FINALE 0 \n";
-traitement::keep_old_uid($limit,\%uids);
+user::keep_old_uid($limit,\%uids);
 print " PHASE FINALE 1 \n";
-traitement::keep_unwanted($limit,\@eggs);
+user::keep_unwanted($limit,\@eggs);
 print " FIN REM  \n";
-#gen_name::searchndestroy($output,\@eggs);
-#traitement::readthrough(\@eggs,$output,$limit."_wuwant.ldif");
-#print " PHASE FINALE 3\n"o;
-#traitement::readnmodify($limit."_wuwant.ldif",$limit."_clean.ldif",\%uids);
+
+print "limit" .$limit."\n";
+print "GRoup " . $nbgroup."\n";
+print "Member " . $member."\n";
+print "MemberUID" . $memberUID."\n";
+print "Group n domain " . $domain_group."\n";
+print "Domain " . $domain."\n";
+print "Entries " . $entry_waited."\n";
+print "Not Parsed " . $notparsed."\n";
+print "Other " . $other_entries."\n";

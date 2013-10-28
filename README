@@ -1,4 +1,31 @@
+Version 24 Octobre 2013
 
+# packages 
+	file.pm		open_file, test_parameter
+
+	elag.pl
+	#	perl elag.pl input.ldif output.ldif
+	
+		verifier ecrassement de fichier existant
+		Permet de faire une première selection des 
+		entrées désirées du dump ldif
+		# Affiche un compte rendu du resultat obtenu 
+			 	hotes deleted 2079
+ 				status deleted 3000
+ 				object deleted 724
+ 				Total entries 68943
+ 	
+ 
+
+
+
+
+
+
+
+
+
+###############################
 # VErsion Jeudi 4 juillet 
  La version pécédente comportait de nombreuses erreurs:
 
