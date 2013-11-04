@@ -17,73 +17,78 @@ use Net::LDAP::LDIF;
 
 use strict;
 use warnings;
-#################""""""		SUBROUTINE
-## Accès fichier
-sub open_file{
-	my $file 	=	$_[0];
-	my $option 	=	$_[1]; 
-	my $output;
 
-	if($option eq "r"){
-		$output = Net::LDAP::LDIF->new( $file, "r", 
-                        encode => 'canonical', onerror => 'undef');
-		}elsif($option eq "w"){
-		$output = Net::LDAP::LDIF->new($file, "a", 
-                        encode => 'canonical', onerror => 'undef');
-        }else{
-		print "Option not defined $file \n";
-		exit;
-		}
-		return $output;
-}	
-################################ END SUBROUTINE
+require "file.pm";
 
 # test nombre de paramètre 
-if($ARGV[0] eq ''){
-		die "Le fichier source est manquant ! \n";
-		
-	}else{
-		if($ARGV[1] eq ''){
-				die "le fichier destination est manquant !\n";
-		}
-}
+file::test_parameter($ARGV[0],$ARGV[1]);
 
+# variables
 my $input_ldif = $ARGV[0];
 my $output_ldif = $ARGV[1];
-# auastatus a supprimer
-my @status_exclus =('access-web','bu','bu-sortant','convention', 'etu_entrant',
- 'ext-conseil','perso-nomail','perso-sortant-nomail');
+# auastatut a supprimer
+my @statut_exclus =('acces-web','bu','bu-sortant','convention',
+					'etu-entrant','ext-conseil',
+					'perso-nomail','perso-sortant-nomail');
 
 # objectclass a supprimer 
-my @object_exclus = ('sambaSamAccount','sambaDomain');
+my @object_exclus = ('sambaSamAccount');
 
-#ou=hosts
-
-#Champs à supprimer dans ou=people :
-#samba*
 
 ############## OUVERTURE DE FICHIER
 # SOURCE
-	my $read_source = &open_file($input_ldif,"r");
-	my $write_clean = &open_file($output_ldif,"w");
+	my $read_source = file::open_file($input_ldif,"r");
+	my $write_clean = file::open_file($output_ldif,"w");
+	my $excluded	= file::open_file("excluded.ldif","w");
+	my $status_excluded = file::open_file("status_excluded.ldif","w");
 
-## Lecture Source
+my $host_deleted	=	0;
+my $statut_excluded	= 	0;
+my $object_excluded = 	0;
+my $total_entries	=	0;
+
+#################""""""		SUBROUTINE
+sub test_host{
+	my $entry = $_[0];
+	if ($entry -> dn() =~ m/ou\=host/){
+				$host_deleted++;
+				$excluded -> write_entry($entry);
+				return 1;}
+}
+sub test_status{
+	my $entry = $_[0];
+	if($entry -> get_value('auastatut') ~~ @statut_exclus){
+				$statut_excluded++;
+				$status_excluded -> write_entry($entry);
+				return 1;}
+}
+sub test_class{
+	my $entry = $_[0];
+	if($entry -> get_value('objectclass') ~~ @object_exclus){
+			$object_excluded++;
+			$excluded -> write_entry($entry);
+			return 1;}
+}
+################################ END SUBROUTINE
 
 while (not $read_source->eof()){
 		my $entry = $read_source->read_entry();
-		# n'est pas un hôte
-		if (not $entry -> dn() =~ m/ou\=host/
-			||
-		# n'a pas de status d'exclusion
-			not $entry -> get_value('auastatus')~~ @status_exclus
-			|| 
-		# n'a pas de classe d'exclusion
-			not $entry -> get_value('objectclass') ~~ @object_exclus)
+		
+		unless (&test_status($entry) || &test_class($entry) || &test_host($entry)) 
 			{
 			#ecrire
 				$write_clean -> write_entry($entry);
+				$total_entries++;
 			}
 	}
+
+## Fermeture
 $read_source->done();
 $write_clean->done();
-print "Fin de nettoyage \n"
+
+## Messages
+print "Fin de nettoyage \n";
+print " hotes deleted " . $host_deleted ."\n";
+print " status deleted " . $statut_excluded ."\n";
+print " object deleted " . $object_excluded ."\n";
+print " Total entries " . $total_entries ."\n";
