@@ -1,7 +1,7 @@
 #!/usr/bin.perl -w 
 
 use Net::LDAP::LDIF;
-use Scalar::Util::Reftype;
+#use Scalar::Util::Reftype;
 
 use strict; 
 use warnings;
