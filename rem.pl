@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
 #REM -Read Extract and Modify
 use Net::LDAP::LDIF;
+use integer;
 
 require "file.pm";
 require "user.pm";
@@ -44,9 +45,11 @@ my @uidex=();
 #####################			FICHIERS
  
 # non modify 
-my $non_modif = $limit."_non_modified.ldif";
+my $non_modif = $fullpath."_non_modified.ldif";
 
-my $selected = $limit."selected.ldif";
+
+
+my $selection =$fullpath."selection.ldif";
 
 my $attr= 'auaStatut';
 my $uidToDelete; 
@@ -83,22 +86,26 @@ sub test_entry{
 				exit;
 			}
 }
+my $selected = $fullpath."selected.ldif";
 
 sub get_only_group{
 	# Filename 
+	
 	
 	my $samba_file 	=	$fullpath."_samba.ldif";
 	my $orga_file	=	$fullpath."_orga.ldif";
 	my $group_file 	=	$fullpath."_group.ldif";
 	my $domain_file =	$fullpath."_domain.ldif";
 	my $domain_group_file = $fullpath."_domain_group.ldif";
+	
+	
 	# Handler
 	my $w_samba_file =	file::open_file($samba_file,"w");
 	my $w_orga_file =	file::open_file($orga_file,"w");
 	my $w_group_file = file::open_file($group_file,"w");
 	my $w_domain_file = file::open_file($domain_file,"w");
-	my $w_domain_group_file = file::open_file($domain_group_file,"w");
-
+	my $w_selected = file::open_file($selected,"w");
+	
 	while (not $r_source->eof() ){
 		my $entry = $r_source->read_entry();
 		&test_entry($entry);
@@ -108,69 +115,88 @@ sub get_only_group{
 			if(group::is_orga($entry)){
 				group::get_group($entry,$w_orga_file);
 				$orga++;
-			}elsif(group::is_samba($entry)){
+				
+			}elsif(group::is_samba_group($entry)){
 				group::get_group($entry,$w_samba_file);
 				$samba++;
+				
 			}elsif(group::is_domain($entry)){
 				group::get_group($entry,$w_domain_file);
 				$domain++;
+				
 			}elsif(group::is_group($entry)){
+				group::get_group($entry,$w_group_file);
 				$nbgroup++;
-			
-		}
+				}
+			elsif(user::is_user($entry) && $entry->get_value('uid')){
+			user::get_user($entry,$w_selected);
+			}
 }
-	#Fermeture des fichiers
+	
+	$w_samba_file->done();
+	$w_orga_file->done();
 	$w_group_file->done();
 	$w_domain_file->done();
-	$w_domain_group_file->done();
-	
+	$w_selected->done();
+
 	$r_source->done();
 }
 
-
-sub get_only_user{
+sub get_selected_user{
 	my $cpt = 0;
-	# Ouverture du fichier des selections
-	my $w_selected = file::open_file($selected,"w");
-	my $r_source = file::open_file($source,"r");
-	
+	my $r_selected = file::open_file($selected,"r");
+	my $w_selection = file::open_file($selection,"w");
 	my @final = gen_name::result();
-	
-	while (not $r_source->eof() ){
-		my $entry = $r_source->read_entry();
-	if(user::is_user($entry) && $entry->get_value('uid')){
-		my @final = gen_name::result();
-			if($cpt < $limit){
-				
-				# extract name list
-			
+	while (not $r_selected->eof() ){
+		my $entry = $r_selected->read_entry();
+		&test_entry($entry);
+	if($cpt < $limit){
+		# extract name list
 				my $genID = $final[$cpt];
 				my $uid =$genID->{uid};
-				
+				if($entry->get_value('uid') eq ''){ 
+					print "no uid";
+					$entry->dump();
+					print "\n";
+				}
 				$uids{$entry->get_value('uid')}=$uid;
 				
 				user::modif_user($entry,$cpt,$uid,$genID);
-				user::get_user($entry,$w_selected);
+				user::get_user($entry,$w_selection);
 				# Incrémentation COmpteur
 				
 				$entry_waited++;
-				$cpt++;
-				}elsif($cpt >= $limit){
+				$cpt++;}
+				elsif($cpt >= $limit){
+					my $uwant = $entry->get_value('uid');
+					push @eggs,$uwant unless $uwant ~~ @eggs;
 					$notparsed++;	
 				}
-			}else{
-			$other_entries++;
-			}
 	}
-	$w_selected->done();
-}
+	$w_selection->done();
+	$r_selected->done();	
+	}
+	
 
+
+
+
+print "one\n";
 &get_only_group;
-&get_only_user;
+print "two\n";
+
+
+&get_selected_user;
+print "three\n";
+
+
+
+
+
 
 #Cloture des fichiers
-$r_source->done();
-$w_non_modif->done();
+#$r_source->done();
+#$w_non_modif->done();
 
 ## Modification des entrées uidi
 #print scalar(@eggs)."\n";

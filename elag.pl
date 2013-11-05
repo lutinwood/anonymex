@@ -34,13 +34,13 @@ my @statut_exclus =('acces-web','bu','bu-sortant','convention',
 # objectclass a supprimer 
 my @object_exclus = ('sambaSamAccount');
 
-
+my $fullpath = "result/";
 ############## OUVERTURE DE FICHIER
 # SOURCE
 	my $read_source = file::open_file($input_ldif,"r");
 	my $write_clean = file::open_file($output_ldif,"w");
-	my $excluded	= file::open_file("excluded.ldif","w");
-	my $status_excluded = file::open_file("status_excluded.ldif","w");
+	my $excluded	= file::open_file($fullpath."excluded.ldif","w");
+	my $status_excluded = file::open_file($fullpath."status_excluded.ldif","w");
 
 my $host_deleted	=	0;
 my $statut_excluded	= 	0;
@@ -85,6 +85,9 @@ while (not $read_source->eof()){
 ## Fermeture
 $read_source->done();
 $write_clean->done();
+$excluded->done();
+$status_excluded->done();
+
 
 ## Messages
 print "Fin de nettoyage \n";

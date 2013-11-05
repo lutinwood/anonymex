@@ -34,12 +34,12 @@ sub is_samba_group{
 		
 }
 
-
 sub get_group{
 	my $entry  	= 	$_[0];
 	my $file 	=	$_[1];
 		$file->write_entry($entry);	
 }
+ 	  
 
 #END {}
 1;
