@@ -39,10 +39,13 @@ Version 24 Octobre 2013
 	perl modif_group.pl $limit
 
 
-read_cor(),read_n_clean(),clean_member()
+	read_cor(),read_n_clean(),clean_member()
 
 
-
+###
+## Utilisation 
+perl rem.pl $file_ldif $limit
+perl modif_group.pl $limit
 
 ###############################
 # VErsion Jeudi 4 juillet 
