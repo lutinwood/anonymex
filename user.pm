@@ -33,34 +33,34 @@ sub modif_user{
 		  	   foreach my $field(@fields){ 
 		   		traitement::SpecMod($genID,$entry,$field);
 		  	   }
-		  	   
 		}
 	}
 
 sub keep_old_uid{
 	my $limit  	= 	$_[0];
-	my $string = $_[1];
-	my %ptr = %$string; 
-## Conservation d'un tableau associatif des correspondance old and neuw uid 
-
-# dans un fichier 
-open(COR_FILE, ">".$limit."_cor.txt")or die('Could not open COR File ');
+	my $string 	= 	$_[1];
+	my %ptr 	= %$string; 
+	
+	my $fullpath = "result/".$limit; 
+	open(COR_FILE, ">".$fullpath."_cor.txt")or die('Could not open COR File ');
 	while ((my $c,my $v) = each(%ptr)) {
- print COR_FILE "$c:$v\n";
-}
-close(COR_FILE);
+ 		print COR_FILE "$c:$v\n";
+	}
+	close(COR_FILE);
 }
 
 sub keep_unwanted{
 	my $limit=$_[0];
 	my $string = $_[1];
 	my @ptr = @$string; 
-	open(COR_FILE, ">".$limit."_unwant.txt")or die('Could not open unwant File ');
+	my $fullpath = "result/".$limit;
+	
+	open(COR_FILE, ">".$fullpath."_unwant.txt")or die('Could not open unwant File ');
 		foreach my $uid (@ptr){
 			print COR_FILE "$uid\n";
-  
 			}
 	close(COR_FILE);
 }
+
 #END {}
 1;

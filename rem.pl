@@ -15,69 +15,57 @@ use warnings;
 ###################	VARIABLES
 #
 #	perl rem.pl $file_ldif $limit
-#
-##############################
+#		$source		->	Fichier ldif 
+#		$limit		->	Nombre d'individus
+#		@exclus		-> auaStatut non traité
+#		@mail_field -> Champs mail possibles
+#		@eggs		-> uid non retenue
+#		@uidex		-> correspondance old new uid 
+#		
+#		
+#			TEST
+my $nbgroup 		= 	0;
+my $member 			= 	0;
+my $memberUID 		= 	0;
+my $gecos 			= 	0;
+my $domain			=	0;
+my $domain_group	= 	0;
+my $entry_waited	=	0;
+my $notparsed		=	0;
+my $other_entries	=	0;
+my $samba			=	0;
+my $orga			=	0;
 
 file::test_parameter($ARGV[0],$ARGV[1]);
 
-# Fichier LDIF De référence
-my $source =$ARGV[0];
+###		VAR
 
-# Nombre d'individus à générer 
-my $limit= $ARGV[1];
+my $source 	=	$ARGV[0];
+my $limit	= 	$ARGV[1];
 
-my $path = "result/";
-my $fullpath = $path.$limit;
+my $path 	= "result/";
+my $fullpath 	= 	$path.$limit;
 
-## auastatut non traité
-my @exclus = ('jeton');
-## Champs mail 
-my @mail_field =('mail','auaEmailRenvoi',
-                'auaAliasEmail','supannMailPerso','supannAutreMail');
-
-#list des uid a supprimer
-#UID non retenues
-my @eggs= ();
-
-my @uidex=();
-
-
-#####################			FICHIERS
- 
-# non modify 
-my $non_modif = $fullpath."_non_modified.ldif";
-
-
-
-my $selection =$fullpath."selection.ldif";
-
-my $attr= 'auaStatut';
-my $uidToDelete; 
-###################	OUVERTURE DE FICHIERS
-# Ouverture du fichier source 
-	my $r_source = file::open_file($source,"r");
-# Ouverture du fichier des entree modifiées	
-	my $w_non_modif = file::open_file($non_modif,"w");
-
-
+my @exclus 	= 	('jeton'); 
+my @mail_field 	=	('mail','auaEmailRenvoi',
+                	'auaAliasEmail','supannMailPerso','supannAutreMail');
+my @eggs	= 	();
+my @uidex	=	();
 my %uids = ();
 
-#TEST
-my $nbgroup 	= 	0;
-my $member 		= 	0;
-my $memberUID 	= 	0;
-my $gecos 		= 	0;
-my $domain		=	0;
-my $domain_group= 	0;
-my $entry_waited=	0;
-my $notparsed	=	0;
-my $other_entries=	0;
-my $samba		=0;
-my $orga		=0;
+###		FICHIERS
+ 
+my $non_modif 	= 	$fullpath."_non_modified.ldif";
+my $selection 	=	$fullpath."_selection.ldif";
+my $selected 	= 	$fullpath."selected.ldif";
 
+my $samba_file 			=	$fullpath."_samba.ldif";
+my $orga_file			=	$fullpath."_orga.ldif";
+my $group_file 			=	$fullpath."_group.ldif";
+my $domain_file 		=	$fullpath."_domain.ldif";
+my $domain_group_file 	= 	$fullpath."_domain_group.ldif";
 
-#########		TRAITEMENT
-# Debut de la lecture du fichier source
+#########		SUBROUTINES
 
 sub test_entry{
 	my $entry  	= 	$_[0];
@@ -86,31 +74,19 @@ sub test_entry{
 				exit;
 			}
 }
-my $selected = $fullpath."selected.ldif";
 
 sub get_only_group{
-	# Filename 
-	
-	
-	my $samba_file 	=	$fullpath."_samba.ldif";
-	my $orga_file	=	$fullpath."_orga.ldif";
-	my $group_file 	=	$fullpath."_group.ldif";
-	my $domain_file =	$fullpath."_domain.ldif";
-	my $domain_group_file = $fullpath."_domain_group.ldif";
-	
-	
 	# Handler
 	my $w_samba_file =	file::open_file($samba_file,"w");
 	my $w_orga_file =	file::open_file($orga_file,"w");
 	my $w_group_file = file::open_file($group_file,"w");
 	my $w_domain_file = file::open_file($domain_file,"w");
 	my $w_selected = file::open_file($selected,"w");
+	my $r_source 	= file::open_file($source,"r");
 	
 	while (not $r_source->eof() ){
 		my $entry = $r_source->read_entry();
 		&test_entry($entry);
-		
-		
 		
 			if(group::is_orga($entry)){
 				group::get_group($entry,$w_orga_file);
@@ -132,26 +108,34 @@ sub get_only_group{
 			user::get_user($entry,$w_selected);
 			}
 }
-	
+	# Fermeture
 	$w_samba_file->done();
 	$w_orga_file->done();
 	$w_group_file->done();
 	$w_domain_file->done();
 	$w_selected->done();
-
 	$r_source->done();
 }
 
+sub generate_id{
+	
+}
+
 sub get_selected_user{
+	my $cpt_etud = 0;
+	my $cpt_perso = 0;
 	my $cpt = 0;
+	my @final = gen_name::result();
+	
 	my $r_selected = file::open_file($selected,"r");
 	my $w_selection = file::open_file($selection,"w");
-	my @final = gen_name::result();
+
 	while (not $r_selected->eof() ){
 		my $entry = $r_selected->read_entry();
 		&test_entry($entry);
-	if($cpt < $limit){
-		# extract name list
+		# Etudiant
+		if ($entry->get_value('auaStatut') =~ 'etu' && $cpt_etud < $limit){
+				# extract name list
 				my $genID = $final[$cpt];
 				my $uid =$genID->{uid};
 				if($entry->get_value('uid') eq ''){ 
@@ -159,53 +143,58 @@ sub get_selected_user{
 					$entry->dump();
 					print "\n";
 				}
+				
 				$uids{$entry->get_value('uid')}=$uid;
 				
 				user::modif_user($entry,$cpt,$uid,$genID);
 				user::get_user($entry,$w_selection);
-				# Incrémentation COmpteur
 				
 				$entry_waited++;
-				$cpt++;}
-				elsif($cpt >= $limit){
+				$cpt_etud++;
+				$cpt++;
+			}
+			elsif($entry->get_value('auaStatut') =~ 'etu' && $cpt_perso < $limit){
+							# extract name list
+				my $genID = $final[$cpt];
+				my $uid =$genID->{uid};
+				if($entry->get_value('uid') eq ''){ 
+					print "no uid";
+					$entry->dump();
+					print "\n";
+				}
+				
+				$uids{$entry->get_value('uid')}=$uid;
+				
+				user::modif_user($entry,$cpt,$uid,$genID);
+				user::get_user($entry,$w_selection);
+				
+				$entry_waited++;
+				$cpt_perso++;
+				$cpt++;
+			}
+				elsif($cpt_etud >= $limit || $cpt_perso >= $limit){
 					my $uwant = $entry->get_value('uid');
 					push @eggs,$uwant unless $uwant ~~ @eggs;
 					$notparsed++;	
 				}
+		
 	}
 	$w_selection->done();
 	$r_selected->done();	
 	}
-	
 
-
-
-
-print "one\n";
+###		MAIN
+print "group\n";
 &get_only_group;
-print "two\n";
-
-
+print "user\n";
 &get_selected_user;
-print "three\n";
-
-
-
-
-
-
-#Cloture des fichiers
-#$r_source->done();
-#$w_non_modif->done();
-
-## Modification des entrées uidi
-#print scalar(@eggs)."\n";
-print " PHASE FINALE 0 \n";
+print " keep old\n";
 user::keep_old_uid($limit,\%uids);
-print " PHASE FINALE 1 \n";
+print " keep unwanted 1 \n";
 user::keep_unwanted($limit,\@eggs);
 print " FIN REM  \n";
 
+### 	MESSAGE
 print "limit" .$limit."\n";
 print "GRoup " . $nbgroup."\n";
 print "Member " . $member."\n";

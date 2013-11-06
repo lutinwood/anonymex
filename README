@@ -1,12 +1,10 @@
 Version 24 Octobre 2013
 
-# packages 
-	file.pm		open_file, test_parameter
-
-	elag.pl
+### elag.pl ###
 	#	perl elag.pl input.ldif output.ldif
 	
-		verifier ecrassement de fichier existant
+		!! verifier ecrassement de fichier existant
+		
 		Permet de faire une première selection des 
 		entrées désirées du dump ldif
 		# Affiche un compte rendu du resultat obtenu 
@@ -15,12 +13,33 @@ Version 24 Octobre 2013
  				object deleted 724
  				Total entries 68943
  	
- 
+ 		# packages utilisés
+		file.pm		open_file, test_parameter
+ 	
+ ### rem.pl ###
+ 	#	perl rem.pl $file_ldif $limit
+ 		
+ 			get_only_group(), get_selected_user()
+ 			
+ 		Permet d'extraire le différentes catégorie d'entrée LDIF
+ 		vers des fichiers distincts.
+ 		
+ 		Catégories:
+ 			samba, organizationUnit, groups, domain, user
+ 			
+ 		# packages utilisés
+ 		group.pm	(is_group(),is_domain(),is_org(),is_samba_group(),get_group())
+ 		file.pm		
+ 		user.pm		(is_user(),get_user(),modif_user(),keep_old_uid(),keep_unwanted())
+ 		gen_name.pm
+ 		traitement.pm
+
+### modif_group.pl ###
+	
+	perl modif_group.pl $limit
 
 
-
-
-
+read_cor(),read_n_clean(),clean_member()
 
 
 
