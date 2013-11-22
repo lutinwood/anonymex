@@ -21,7 +21,7 @@ sub is_domain{
 sub is_orga{
 		my $entry  	= 	$_[0];
 		if($entry->get_value('objectClass') 
-		eq 'organizationalUnit'){
+		=~ 'organizationalUnit' && $entry->get_value('objectClass') =~ 'top'){
 			return 1;
 		}
 }

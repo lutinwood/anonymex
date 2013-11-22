@@ -7,7 +7,6 @@ sub is_user{
 	if($entry->dn() =~ m/ou\=people/){
 		return 1;
 	} 
-		
 }
 
 sub get_user{
@@ -16,6 +15,8 @@ sub get_user{
 	$file->write_entry($entry);	
 }
 
+
+
 sub modif_user{
 	my $entry  	= 	$_[0];
 	my $cpt  	= 	$_[1];
@@ -23,8 +24,19 @@ sub modif_user{
 	my $genID  	= 	$_[3];
 	
 	traitement::IdModOne($genID,$entry);
-	my $dn 	= $entry->dn() =~ s/uid=(\w*),/uid=$uid,/r;
-	$entry->dn($dn);
+	
+	
+	if( $entry->dn() =~ /\w*\.\w*/ ){
+		my  $dn = $entry->dn() =~ s/uid=(\w*\.\w*),/uid=$uid,/r;
+		
+		$entry->dn($dn);
+	}else{
+		my $dn 	= $entry->dn() =~ s/uid=(\w*),/uid=$uid,/r;
+		$entry->dn($dn);
+	}
+
+	
+	
 	traitement::SpecMod($genID,$entry,'homeDirectory');
 	if ($entry->get_value( 'auaStatut')){
 		traitement::IdModTwo($genID,$entry);
@@ -35,6 +47,8 @@ sub modif_user{
 		  	   }
 		}
 	}
+
+
 
 sub keep_old_uid{
 	my $limit  	= 	$_[0];

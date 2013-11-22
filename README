@@ -1,4 +1,5 @@
 Version 24 Octobre 2013
+sed '/samba/d' result/ws10_sel.ldif > newsel.ldif
 
 ### elag.pl ###
 	#	perl elag.pl input.ldif output.ldif

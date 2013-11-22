@@ -119,14 +119,16 @@ sub multi(@){ # @ contrôle que le paramètre soit bien une liste
 	for(my $i=0;$i<600;$i++){
 	  # Utilisation d'un choix aléatoire 
 	  my $rand =0;
-	  $rand = int(rand(500));	
+	  $rand = int(rand(500));
+	  $rand2  = int(rand(300)); 	
 	  # Extraction d'un enregistrement aléatoire
 	  my $temp = $source[$rand];
+	  my $tname = $source[$rand2];
+	  
 	    # Ajout de l'entrée aléatoire
 	    push @dest, {
-		id => $result->{noms} . " " .
-				$temp->{prenoms}, 
-		noms	=> 	$result->{noms},
+		id => $tname->{noms} . " " . $temp->{prenoms}, 
+		noms	=> 	$tname->{noms},
 		# Issue de l'entrée aléatoirement choisi
 		prenoms => 	$temp->{prenoms},
 		};
@@ -223,11 +225,16 @@ my $new_path = $old_path;
 
 # s = replace
 # s/string to replace/new string/ g = modify | r = make a copi
-$new_path =~ s/\/home\/(\w)\/(\w)\/(\w*)/\/home\/$first\/$second\/$user/g;
+if($new_path =~ /\w*\.\w*/) {
+	
+	$new_path =~ s/\/home\/(\w)\/(\w)\/(\w*\.\w*)/\/home\/$first\/$second\/$user/g;
+	}else{
+	$new_path =~ s/\/home\/(\w)\/(\w)\/(\w*)/\/home\/$first\/$second\/$user/g;
+	}
 return $new_path;
 }
 
-########################################################
+########################################################(\w*\.\w*)
 #
 #		Modification des entrée uid old -> new
 #

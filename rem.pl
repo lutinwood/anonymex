@@ -134,7 +134,7 @@ sub get_selected_user{
 		my $entry = $r_selected->read_entry();
 		&test_entry($entry);
 		# Etudiant
-		if ($entry->get_value('auaStatut') =~ 'etu' && $cpt_etud < $limit){
+		if ($entry->get_value('auaStatut') eq 'etu' && $cpt_etud < $limit){
 				# extract name list
 				my $genID = $final[$cpt];
 				my $uid =$genID->{uid};
@@ -153,7 +153,7 @@ sub get_selected_user{
 				$cpt_etud++;
 				$cpt++;
 			}
-			elsif($entry->get_value('auaStatut') =~ 'etu' && $cpt_perso < $limit){
+			elsif($entry->get_value('auaStatut') eq 'perso' && $cpt_perso < $limit){
 							# extract name list
 				my $genID = $final[$cpt];
 				my $uid =$genID->{uid};

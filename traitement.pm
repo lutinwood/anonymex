@@ -10,7 +10,6 @@ sub IdModOne{
 	sn 	=> 	$genID->{noms},
 	cn 	=> 	$genID->{prenoms}. " " . $genID->{noms}
 	);
-
 	}
 
 # ayant un attribut auastatut
@@ -56,12 +55,19 @@ sub SpecMod{
 			$entry->replace($field => gen_name::gen_phone());
 			}
 		}
-  elsif($field eq 'sambaSID'){
-		if ($entry->get_value('sambaSID')){
-		$entry->replace(sambaSID => $genID->{uid});
-		}	
-	}
-
+  #elsif($field eq 'sambaSID'){
+#		if ($entry->get_value('sambaSID')){
+#		$entry->replace(sambaSID => $genID->{uid});
+#		}	
+#	}
+elsif($field eq 'sambaPrimaryGroupSID'){
+	$entry->delete( 'sambaPrimaryGroupSID' => []);
+	
+}
+	elsif ($field ~~ [qw(   sambaNTPassword sambaPwdLastSet)]){
+		$entry->delete( $field => []);
+		}
+	
 }
 
 # Lecture ligne a ligne d'un fichier  + omission 
